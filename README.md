@@ -29,8 +29,9 @@ From a software development perspective, our data pipeline is constructed using 
 The first part of this repository pipeline/ contains a complex data pipeline that builds the largest dataset about evolving cities over time. This dataset features information about the population, geography, area, shape and occupation profiles of cities around the world with an extensive spatial and temporal extent. 
 
 Figure 1 reports a map of the northeastern United States in 2020, according to the Global Cities dataset. 
-
+![map_north_east.png](figures/map_north_east.png)
 Figure 2 (Top) illustrates the population trajectories of US cities from 1850 to 1940. The color gradient reflects city populations in 1940, with darker shades indicating larger populations. We observe that while most cities grew in parallel, some experienced sudden and significant ascents in the urban population ranking. Figure 2 (Bottom) reports Zipf's law, a famous empirical regularity of systems of cities, for US cities in 1870 and all cities around the world in 1975.
+![trajectories.png](figures/trajectories.png)
 
 ## Models
 
