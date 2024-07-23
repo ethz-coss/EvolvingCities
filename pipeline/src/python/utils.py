@@ -1,4 +1,6 @@
-from typing import Dict
+from typing import Dict, List
+import subprocess
+import os
 from enum import Enum
 from sqlalchemy import create_engine, text, MetaData, Table
 import functools
@@ -14,14 +16,17 @@ ch = logging.StreamHandler()
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
-engine_temp_duckdb = create_engine(config.db.temp_duckdb, echo=True if config.debug else False)
-engine_clusterdb_postgres = create_engine(config.db.clusterdb_postgres, echo=True if config.debug else False)
-metadata_clusterdb_postgres = MetaData()
+engine_temp_duckdb = create_engine(config.db.temp_duckdb_uri, echo=True if config.debug else False)
+engine_ipums_postgres = create_engine(config.db.ipums_postgres_uri, echo=True if config.debug else False)
+metadata_ipums_postgres = MetaData()
+engine_ghsl_postgres = create_engine(config.db.ghsl_postgres_uri, echo=True if config.debug else False)
+metadata_ghsl_postgres = MetaData()
 
 
 class DB(Enum):
     TEMP_DUCKDB = 'temp_duckdb'
-    CLUSTERDB_POSTGRES = 'clusterdb_postgres'
+    IPUMS_POSTGRES = 'clusterdb_postgres'
+    GHSL_POSTGRES = 'ghsl_postgres'
 
 
 def run_sql_script_on_db(db: DB):
@@ -42,14 +47,21 @@ def run_sql_script_on_db(db: DB):
 def get_db_engine(db: DB):
     if db == DB.TEMP_DUCKDB:
         return engine_temp_duckdb
-    elif db == DB.CLUSTERDB_POSTGRES:
-        return engine_clusterdb_postgres
+    elif db == DB.IPUMS_POSTGRES:
+        return engine_ipums_postgres
+    elif db == DB.GHSL_POSTGRES:
+        return engine_ghsl_postgres
     else:
         raise ValueError(f"Database {db.value} not supported")
 
 
-def get_clusterdb_postgres_table(name: str):
-    return Table(name, metadata_clusterdb_postgres, autoload_with=engine_clusterdb_postgres)
+def get_postgres_table(name: str, db: DB):
+    if db == DB.IPUMS_POSTGRES:
+        return Table(name, metadata_ipums_postgres, autoload_with=engine_ipums_postgres)
+    elif db == DB.GHSL_POSTGRES:
+        return Table(name, metadata_ghsl_postgres, autoload_with=engine_ghsl_postgres)
+    else:
+        raise ValueError(f"Database {db.value} not supported")
 
 
 def execute_sql_file(conn, file_path: str, params: Dict[str, str] = None):
@@ -62,3 +74,29 @@ def execute_sql_file(conn, file_path: str, params: Dict[str, str] = None):
     template = jinja2.Template(sql)
     sql = template.render(params=params)
     conn.execute(text(sql))
+
+
+def execute_bash_script(file_path: str, args: List[str]):
+    # Change the permissions of the script to make it executable
+    os.chmod(file_path, 0o755)
+
+    print("Running bash script with arguments:")
+    # Run the bash script with arguments using subprocess.Popen
+    process = subprocess.Popen([file_path] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    # Read and print the output live
+    while True:
+        output = process.stdout.readline()
+        if output == '' and process.poll() is not None:
+            break
+        if output:
+            print(output.strip())
+
+    # Print any errors
+    err = process.stderr.read()
+    if err:
+        print("stderr:", err.strip())
+
+    # Print the return code
+    print("Return code:", process.returncode)
+

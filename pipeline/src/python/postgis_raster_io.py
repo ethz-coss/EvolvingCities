@@ -59,7 +59,7 @@ def dump_raster(con: sqlalchemy.engine.Connection, data: xr.DataArray, table_nam
 if __name__ == '__main__':
     from utils import get_db_engine, DB
 
-    e = get_db_engine(db=DB.CLUSTERDB_POSTGRES)
+    e = get_db_engine(db=DB.IPUMS_POSTGRES)
     with e.begin() as conn:
         raster = load_raster(conn, 'rasterized_census_places_1850')
         print(raster)
